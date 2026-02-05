@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Neon Glass AI Assistant</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      font-family: 'Outfit', sans-serif;
+      height: 100vh;
+      background: radial-gradient(circle at 20% 20%, #0f172a, #020617 70%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .glow-bg::before {
+      content: '';
+      position: absolute;
+      width: 500px;
+      height: 500px;
+      background: radial-gradient(circle, rgba(99,102,241,0.4), transparent 60%);
+      top: -150px;
+      left: -150px;
+      filter: blur(80px);
+    }
+
+    .glow-bg::after {
+      content: '';
+      position: absolute;
+      width: 500px;
+      height: 500px;
+      background: radial-gradient(circle, rgba(236,72,153,0.4), transparent 60%);
+      bottom: -150px;
+      right: -150px;
+      filter: blur(80px);
+    }
+
+    .glass {
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .chat-scroll::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .chat-scroll::-webkit-scrollbar-thumb {
+      background: rgba(255,255,255,0.2);
+      border-radius: 20px;
+    }
+
+    .msg-pop {
+      animation: pop 0.35s ease;
+    }
+
+    @keyframes pop {
+      from { opacity: 0; transform: translateY(10px) scale(.96); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .typing span {
+      width: 6px;
+      height: 6px;
+      background: #818cf8;
+      border-radius: 50%;
+      display: inline-block;
+      margin: 0 2px;
+      animation: bounce 1s infinite alternate;
+    }
+
+    .typing span:nth-child(2) { animation-delay: .2s }
+    .typing span:nth-child(3) { animation-delay: .4s }
+
+    @keyframes bounce {
+      from { transform: translateY(0) }
+      to { transform: translateY(-6px) }
+    }
+
+  </style>
+</head>
+
+<body>
+
+<div class="glow-bg absolute inset-0"></div>
+
+<div class="relative w-full max-w-4xl h-[90vh] rounded-3xl glass shadow-2xl flex flex-col overflow-hidden">
+
+  <!-- Header -->
+  <div class="flex items-center justify-between px-6 py-5 border-b border-white/10">
+    <div class="flex items-center gap-4">
+      <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-indigo-500 to-pink-500 flex items-center justify-center shadow-lg">
+        <span class="text-white font-bold text-lg">AI</span>
+      </div>
+      <div>
+        <h2 class="text-white font-semibold text-lg">Nova Assistant</h2>
+        <p class="text-xs text-indigo-300">Neural Chat Online</p>
+      </div>
+    </div>
+
+    <div class="flex gap-2">
+      <button class="w-9 h-9 rounded-xl bg-white/5 hover:bg-white/10 text-white transition">⚙</button>
+      <button class="w-9 h-9 rounded-xl bg-white/5 hover:bg-white/10 text-white transition">⌕</button>
+    </div>
+  </div>
+
+  <!-- Chat -->
+  <div id="chat" class="flex-1 overflow-y-auto chat-scroll px-6 py-6 space-y-5">
+
+    <div class="flex">
+      <div class="msg-pop bg-white text-slate-800 rounded-2xl rounded-tl-none px-5 py-4 max-w-[80%] shadow-lg">
+        <p class="text-xs font-semibold text-indigo-600 mb-1">Nova AI</p>
+        Hey there ✨ Ready to build something futuristic today?
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Input -->
+  <form id="form" class="p-5 border-t border-white/10">
+    <div class="flex gap-3">
+      <input
+        id="input"
+        type="text"
+        placeholder="Type your message..."
+        class="flex-1 bg-white/5 border border-white/10 text-white rounded-2xl px-5 py-3 outline-none focus:border-indigo-400 transition"
+      />
+
+      <button class="px-6 py-3 rounded-2xl bg-gradient-to-r from-indigo-500 to-pink-500 text-white font-semibold shadow-lg active:scale-95 transition">
+        Send
+      </button>
+    </div>
+  </form>
+
+</div>
+
+<script>
+
+const form = document.getElementById('form');
+const input = document.getElementById('input');
+const chat = document.getElementById('chat');
+
+const API = 'http://127.0.0.1:5000/chat';
+
+function addMessage(role, text) {
+  const row = document.createElement('div');
+  row.className = role === 'user' ? 'flex justify-end' : 'flex';
+
+  const bubble = document.createElement('div');
+  bubble.className = `msg-pop px-5 py-4 rounded-2xl max-w-[80%] shadow-lg ${role === 'user' ?
+    'bg-gradient-to-r from-indigo-500 to-pink-500 text-white rounded-tr-none' :
+    'bg-white text-slate-800 rounded-tl-none'
+  }`;
+
+  if(role === 'ai'){
+    const label = document.createElement('p');
+    label.className = 'text-xs font-semibold text-indigo-600 mb-1';
+    label.textContent = 'Nova AI';
+    bubble.appendChild(label);
+  }
+
+  const span = document.createElement('span');
+  span.textContent = text;
+  bubble.appendChild(span);
+
+  row.appendChild(bubble);
+  chat.appendChild(row);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+function typingIndicator(){
+  const id = 't'+Date.now();
+  const row = document.createElement('div');
+  row.id = id;
+  row.className = 'flex';
+  row.innerHTML = `
+    <div class="bg-white px-5 py-4 rounded-2xl rounded-tl-none shadow typing">
+      <span></span><span></span><span></span>
+    </div>
+  `;
+  chat.appendChild(row);
+  chat.scrollTop = chat.scrollHeight;
+  return id;
+}
+
+form.addEventListener('submit', async e => {
+  e.preventDefault();
+
+  const msg = input.value.trim();
+  if(!msg) return;
+
+  addMessage('user', msg);
+  input.value = '';
+
+  const t = typingIndicator();
+
+  try {
+    const res = await fetch(API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ msg })
+    });
+
+    const text = await res.text();
+    document.getElementById(t).remove();
+    addMessage('ai', text);
+
+  } catch {
+    document.getElementById(t).remove();
+    addMessage('ai', 'Backend not reachable. Start Flask server on port 5000.');
+  }
+
+});
+
+</script>
+
+</body>
+</html>
